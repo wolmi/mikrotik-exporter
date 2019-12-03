@@ -11,5 +11,5 @@ after_success:
     else
       IMAGE=$TRAVIS_REPO_SLUG:$TRAVIS_BRANCH-$TRAVIS_COMMIT;
     fi
-    docker tag $TRAVIS_REPO_SLUG $IMAGE;
-    docker push $IMAGE;
+  - docker tag $TRAVIS_REPO_SLUG $IMAGE
+  - docker push $IMAGE
