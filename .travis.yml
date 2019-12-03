@@ -9,7 +9,7 @@ after_success:
   - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
       IMAGE=$TRAVIS_REPO_SLUG:latest;
     else
-      IMAGE=$TRAVIS_REPO_SLUG:$TRAVIS_BRANCH-$TRAVIS_COMMIT;
+      IMAGE=$TRAVIS_REPO_SLUG:$TRAVIS_BRANCH-$(git rev-parse --short $TRAVIS_COMMIT);
     fi
   - docker tag $TRAVIS_REPO_SLUG $IMAGE
   - docker push $IMAGE
