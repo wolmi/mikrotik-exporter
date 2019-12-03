@@ -7,9 +7,9 @@ script:
 after_success:
   - echo $DOCKER_PASSWORD|docker login --username $DOCKER_USERNAME --password-stdin
   - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
-      IMAGE="$TRAVIS_REPO_SLUG:latest";
+      IMAGE=$TRAVIS_REPO_SLUG":latest";
     else
-      IMAGE="$TRAVIS_REPO_SLUG:$TRAVIS_BRANCH-$TRAVIS_COMMIT";
+      IMAGE=$TRAVIS_REPO_SLUG":"$TRAVIS_BRANCH"-"$TRAVIS_COMMIT";
     fi
     docker tag $TRAVIS_REPO_SLUG $IMAGE;
     docker push $IMAGE;
