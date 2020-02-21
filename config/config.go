@@ -47,15 +47,6 @@ type DnsServer struct {
 	Port    int    `yaml:"port"`
 }
 
-type SrvRecord struct {
-	Record string    `yaml:"record"`
-	Dns    DnsServer `yaml:"dns,omitempty"`
-}
-type DnsServer struct {
-	Address string `yaml:"address"`
-	Port    int    `yaml:"port"`
-}
-
 // Load reads YAML from reader and unmashals in Config
 func Load(r io.Reader) (*Config, error) {
 	b, err := ioutil.ReadAll(r)
