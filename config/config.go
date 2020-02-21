@@ -13,11 +13,14 @@ type Config struct {
 	Features struct {
 		BGP     bool `yaml:"bgp,omitempty"`
 		DHCP    bool `yaml:"dhcp,omitempty"`
+		DHCPL   bool `yaml:"dhcpl,omitempty"`
 		DHCPv6  bool `yaml:"dhcpv6,omitempty"`
+		Health  bool `yaml:"health,omitempty"`
 		Routes  bool `yaml:"routes,omitempty"`
 		POE     bool `yaml:"poe,omitempty"`
 		Pools   bool `yaml:"pools,omitempty"`
 		Optics  bool `yaml:"optics,omitempty"`
+		W60G    bool `yaml:"w60g,omitempty"`
 		WlanSTA bool `yaml:"wlansta,omitempty"`
 		WlanIF  bool `yaml:"wlanif,omitempty"`
 		Monitor bool `yaml:"monitor,omitempty"`
@@ -27,11 +30,21 @@ type Config struct {
 
 // Device represents a target device
 type Device struct {
-	Name     string `yaml:"name"`
-	Address  string `yaml:"address,omitempty"`
-	Srv      string `yaml:"srv,omitempty"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
+	Name     string    `yaml:"name"`
+	Address  string    `yaml:"address,omitempty"`
+	Srv      SrvRecord `yaml:"srv,omitempty"`
+	User     string    `yaml:"user"`
+	Password string    `yaml:"password"`
+	Port     string    `yaml:"port"`
+}
+
+type SrvRecord struct {
+	Record string    `yaml:"record"`
+	Dns    DnsServer `yaml:"dns,omitempty"`
+}
+type DnsServer struct {
+	Address string `yaml:"address"`
+	Port    int    `yaml:"port"`
 }
 
 // Load reads YAML from reader and unmashals in Config

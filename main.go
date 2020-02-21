@@ -29,6 +29,7 @@ var (
 	logLevel    = flag.String("log-level", "info", "log level")
 	metricsPath = flag.String("path", "/metrics", "path to answer requests on")
 	password    = flag.String("password", "", "password for authentication for single device")
+	deviceport  = flag.String("deviceport", "8728", "port for single device")
 	port        = flag.String("port", ":9436", "port number to listen on")
 	timeout     = flag.Duration("timeout", collector.DefaultTimeout, "timeout when connecting to devices")
 	tls         = flag.Bool("tls", false, "use tls to connect to routers")
@@ -38,10 +39,13 @@ var (
 	withBgp     = flag.Bool("with-bgp", false, "retrieves BGP routing infrormation")
 	withRoutes  = flag.Bool("with-routes", false, "retrieves routing table information")
 	withDHCP    = flag.Bool("with-dhcp", false, "retrieves DHCP server metrics")
+	withDHCPL   = flag.Bool("with-dhcpl", false, "retrieves DHCP server lease metrics")
 	withDHCPv6  = flag.Bool("with-dhcpv6", false, "retrieves DHCPv6 server metrics")
+	withHealth  = flag.Bool("with-health", false, "retrieves board Health metrics")
 	withPOE     = flag.Bool("with-poe", false, "retrieves PoE metrics")
 	withPools   = flag.Bool("with-pools", false, "retrieves IP(v6) pool metrics")
 	withOptics  = flag.Bool("with-optics", false, "retrieves optical diagnostic metrics")
+	withW60G    = flag.Bool("with-w60g", false, "retrieves w60g interface metrics")
 	withWlanSTA = flag.Bool("with-wlansta", false, "retrieves connected wlan station metrics")
 	withWlanIF  = flag.Bool("with-wlanif", false, "retrieves wlan interface metrics")
 	withMonitor = flag.Bool("with-monitor", false, "retrieves ethernet interface monitor info")
@@ -121,6 +125,7 @@ func loadConfigFromFlags() (*config.Config, error) {
 				Address:  *address,
 				User:     *user,
 				Password: *password,
+				Port:     *deviceport,
 			},
 		},
 	}, nil
@@ -186,8 +191,16 @@ func collectorOptions() []collector.Option {
 		opts = append(opts, collector.WithDHCP())
 	}
 
+	if *withDHCPL || cfg.Features.DHCPL {
+		opts = append(opts, collector.WithDHCPL())
+	}
+
 	if *withDHCPv6 || cfg.Features.DHCPv6 {
 		opts = append(opts, collector.WithDHCPv6())
+	}
+
+	if *withHealth || cfg.Features.Health {
+		opts = append(opts, collector.WithHealth())
 	}
 
 	if *withPOE || cfg.Features.POE {
@@ -200,6 +213,10 @@ func collectorOptions() []collector.Option {
 
 	if *withOptics || cfg.Features.Optics {
 		opts = append(opts, collector.WithOptics())
+	}
+
+	if *withW60G || cfg.Features.W60G {
+		opts = append(opts, collector.WithW60G())
 	}
 
 	if *withWlanSTA || cfg.Features.WlanSTA {

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -23,8 +24,9 @@ import (
 
 const (
 	namespace  = "mikrotik"
-	apiPort    = ":8728"
-	apiPortTLS = ":8729"
+	apiPort    = "8728"
+	apiPortTLS = "8729"
+	dnsPort    = 53
 
 	// DefaultTimeout defines the default timeout when connecting to a router
 	DefaultTimeout = 5 * time.Second
@@ -88,6 +90,13 @@ func WithDHCPv6() Option {
 	}
 }
 
+// WithHealth enables board Health metrics
+func WithHealth() Option {
+	return func(c *collector) {
+		c.collectors = append(c.collectors, newhealthCollector())
+	}
+}
+
 // WithPOE enables PoE metrics
 func WithPOE() Option {
 	return func(c *collector) {
@@ -106,6 +115,13 @@ func WithPools() Option {
 func WithOptics() Option {
 	return func(c *collector) {
 		c.collectors = append(c.collectors, newOpticsCollector())
+	}
+}
+
+// WithW60G enables w60g metrics
+func WithW60G() Option {
+	return func(c *collector) {
+		c.collectors = append(c.collectors, neww60gInterfaceCollector())
 	}
 }
 
@@ -194,17 +210,24 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	var realDevices []config.Device
 
 	for _, dev := range c.devices {
-		if dev.Srv != "" {
+		if (config.SrvRecord{}) != dev.Srv {
 			log.WithFields(log.Fields{
-				"SRV": dev.Srv,
+				"SRV": dev.Srv.Record,
 			}).Info("SRV configuration detected")
-
+			conf, _ := dns.ClientConfigFromFile("/etc/resolv.conf")
+			dnsServer := net.JoinHostPort(conf.Servers[0], strconv.Itoa(dnsPort))
+			if (config.DnsServer{}) != dev.Srv.Dns {
+				dnsServer = net.JoinHostPort(dev.Srv.Dns.Address, strconv.Itoa(dev.Srv.Dns.Port))
+				log.WithFields(log.Fields{
+					"DnsServer": dnsServer,
+				}).Info("Custom DNS config detected")
+			}
 			dnsMsg := new(dns.Msg)
 			dnsCli := new(dns.Client)
 
 			dnsMsg.RecursionDesired = true
-			dnsMsg.SetQuestion(dns.Fqdn(dev.Srv), dns.TypeSRV)
-			r, _, err := dnsCli.Exchange(dnsMsg, "1.1.1.1:53")
+			dnsMsg.SetQuestion(dns.Fqdn(dev.Srv.Record), dns.TypeSRV)
+			r, _, err := dnsCli.Exchange(dnsMsg, dnsServer)
 
 			if err != nil {
 				os.Exit(1)
@@ -222,7 +245,6 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				}
 			}
 		} else {
-			c.getIdentity(&dev)
 			realDevices = append(realDevices, dev)
 		}
 	}
@@ -310,7 +332,10 @@ func (c *collector) connect(d *config.Device) (*routeros.Client, error) {
 
 	log.WithField("device", d.Name).Debug("trying to Dial")
 	if !c.enableTLS {
-		conn, err = net.DialTimeout("tcp", d.Address+apiPort, c.timeout)
+		if (d.Port) == "" {
+			d.Port = apiPort
+		}
+		conn, err = net.DialTimeout("tcp", d.Address+":"+d.Port, c.timeout)
 		if err != nil {
 			return nil, err
 		}
@@ -319,10 +344,13 @@ func (c *collector) connect(d *config.Device) (*routeros.Client, error) {
 		tlsCfg := &tls.Config{
 			InsecureSkipVerify: c.insecureTLS,
 		}
+		if (d.Port) == "" {
+			d.Port = apiPortTLS
+		}
 		conn, err = tls.DialWithDialer(&net.Dialer{
 			Timeout: c.timeout,
 		},
-			"tcp", d.Address+apiPortTLS, tlsCfg)
+			"tcp", d.Address+":"+d.Port, tlsCfg)
 		if err != nil {
 			return nil, err
 		}
