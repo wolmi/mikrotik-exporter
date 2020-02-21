@@ -39,7 +39,9 @@ var (
 	withBgp     = flag.Bool("with-bgp", false, "retrieves BGP routing infrormation")
 	withRoutes  = flag.Bool("with-routes", false, "retrieves routing table information")
 	withDHCP    = flag.Bool("with-dhcp", false, "retrieves DHCP server metrics")
+	withDHCPL   = flag.Bool("with-dhcpl", false, "retrieves DHCP server lease metrics")
 	withDHCPv6  = flag.Bool("with-dhcpv6", false, "retrieves DHCPv6 server metrics")
+	withHealth  = flag.Bool("with-health", false, "retrieves board Health metrics")
 	withPOE     = flag.Bool("with-poe", false, "retrieves PoE metrics")
 	withPools   = flag.Bool("with-pools", false, "retrieves IP(v6) pool metrics")
 	withOptics  = flag.Bool("with-optics", false, "retrieves optical diagnostic metrics")
@@ -123,7 +125,7 @@ func loadConfigFromFlags() (*config.Config, error) {
 				Address:  *address,
 				User:     *user,
 				Password: *password,
-				Port: *deviceport,
+				Port:     *deviceport,
 			},
 		},
 	}, nil
@@ -189,8 +191,16 @@ func collectorOptions() []collector.Option {
 		opts = append(opts, collector.WithDHCP())
 	}
 
+	if *withDHCPL || cfg.Features.DHCPL {
+		opts = append(opts, collector.WithDHCPL())
+	}
+
 	if *withDHCPv6 || cfg.Features.DHCPv6 {
 		opts = append(opts, collector.WithDHCPv6())
+	}
+
+	if *withHealth || cfg.Features.Health {
+		opts = append(opts, collector.WithHealth())
 	}
 
 	if *withPOE || cfg.Features.POE {
